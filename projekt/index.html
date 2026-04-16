@@ -1,0 +1,372 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#8e44ad">
+
+<!-- Podpięcie dowodu osobistego (manifestu) -->
+<link rel="manifest" href="manifest.json">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shoutbox PRO - Wersja Referencyjna</title>
+    <style>
+        /* ==========================================
+           STYLE CSS (WYGLĄD APLIKACJI)
+           ========================================== */
+        :root {
+            --primary: #8e44ad;
+            --primary-hover: #9b59b6;
+            --bg-color: #f4f7f6;
+            --chat-bg: #ffffff;
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+            --danger: #e74c3c;
+            --like: #e84393;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--chat-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 90vh; /* Zajmuje 90% wysokości ekranu */
+        }
+
+        /* --- EKRAN LOGOWANIA --- */
+        #ekran-logowania {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+
+        #ekran-logowania h1 { color: var(--primary); font-size: 2.5em; margin-bottom: 10px; }
+        #input-nick { padding: 15px; font-size: 1.2em; border: 2px solid #ddd; border-radius: 8px; width: 80%; max-width: 300px; margin-bottom: 20px; text-align: center;}
+        
+        button { background-color: var(--primary); color: white; border: none; padding: 12px 25px; font-size: 1.1em; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: bold;}
+        button:hover { background-color: var(--primary-hover); }
+
+        /* --- EKRAN CZATU --- */
+        #ekran-czatu { display: flex; flex-direction: column; height: 100%; }
+        .ukryte { display: none !important; }
+
+        .chat-header { background-color: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header h2 { margin: 0; font-size: 1.2em; }
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        #btn-wyloguj { background-color: rgba(255,255,255,0.2); padding: 8px 15px; font-size: 0.9em; }
+        #btn-wyloguj:hover { background-color: rgba(255,255,255,0.3); }
+
+        .search-bar { padding: 10px 20px; background-color: #f8f9fa; border-bottom: 1px solid #eee; }
+        #input-szukaj { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; box-sizing: border-box; }
+
+        #okno-wiadomosci { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; background-color: #fcfcfc; }
+
+        /* Wygląd pojedynczej wiadomości */
+        .msg-box { display: flex; gap: 15px; background: white; padding: 15px; border-radius: 10px; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: 0.2s;}
+        .msg-box:hover { box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .msg-avatar img { width: 45px; height: 45px; border-radius: 50%; background-color: #e9ecef; }
+        
+        .msg-content { flex-grow: 1; }
+        .msg-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .msg-author { font-weight: bold; color: var(--text-dark); }
+        .msg-time { font-size: 0.85em; color: var(--text-light); }
+        .msg-text { line-height: 1.5; word-break: break-word; }
+        .msg-text a { color: var(--primary); text-decoration: none; }
+        .msg-text a:hover { text-decoration: underline; }
+
+        .msg-actions { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-akcja { background: none; border: 1px solid #ddd; color: var(--text-light); padding: 5px 10px; font-size: 0.9em; border-radius: 20px; display: flex; align-items: center; gap: 5px;}
+        .btn-akcja:hover { background: #f8f9fa; color: var(--text-dark); }
+        .btn-like.liked { border-color: var(--like); color: var(--like); background-color: rgba(232, 67, 147, 0.1); }
+        .btn-delete:hover { border-color: var(--danger); color: var(--danger); background-color: rgba(231, 76, 60, 0.1); }
+
+        /* Formularz wysyłania */
+        .chat-form { display: flex; padding: 20px; background-color: white; border-top: 1px solid #eee; gap: 10px; }
+        #input-wiadomosc { flex-grow: 1; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em; outline: none; transition: border-color 0.2s;}
+        #input-wiadomosc:focus { border-color: var(--primary); }
+        .chat-form button { padding: 15px 30px; }
+
+        /* Ukrywanie scrollbara dla estetyki */
+        #okno-wiadomosci::-webkit-scrollbar { width: 8px; }
+        #okno-wiadomosci::-webkit-scrollbar-track { background: #f1f1f1; }
+        #okno-wiadomosci::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        #okno-wiadomosci::-webkit-scrollbar-thumb:hover { background: #aaa; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div id="ekran-logowania">
+            <h1>💬 Shoutbox PRO</h1>
+            <p style="color: #7f8c8d; margin-bottom: 30px;">Zaloguj się, aby dołączyć do dyskusji.</p>
+            <input type="text" id="input-nick" placeholder="Wpisz swój nick..." autocomplete="off" onkeypress="handleEnter(event)">
+            <button id="btn-zaloguj">Wejdź na czat</button>
+        </div>
+
+        <div id="ekran-czatu" class="ukryte">
+            <div class="chat-header">
+                <h2>Klasowy Shoutbox</h2>
+                <div class="user-info">
+                    <span id="pokaz-nick"></span>
+                    <button id="btn-wyloguj">Wyloguj</button>
+                </div>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" id="input-szukaj" placeholder="🔍 Szukaj w wiadomościach...">
+            </div>
+
+            <div id="okno-wiadomosci">
+                </div>
+
+            <form id="formularz-wiadomosci" class="chat-form">
+                <input type="text" id="input-wiadomosc" placeholder="Napisz wiadomość..." required autocomplete="off">
+                <button type="submit">Wyślij 🚀</button>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        // 1. ZMIENNE GLOBALNE I KONFIGURACJA
+        const API_URL = 'https://apichat.m89.pl/api/messages';
+        const dzwiekPowiadomienia = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        
+        let mojNick = '';
+        let poprzedniaIloscWiadomosci = 0;
+        let pollingInterval = null;
+
+        // Łapanie elementów HTML
+        const ekranLogowania = document.getElementById('ekran-logowania');
+        const ekranCzatu = document.getElementById('ekran-czatu');
+        const inputNick = document.getElementById('input-nick');
+        const oknoWiadomosci = document.getElementById('okno-wiadomosci');
+        const inputSzukaj = document.getElementById('input-szukaj');
+
+        // 2. FUNKCJE LOGOWANIA
+        function sprawdzSesje() {
+            const zapisanyNick = localStorage.getItem('shoutboxNick');
+            if (zapisanyNick) {
+                mojNick = zapisanyNick;
+                document.getElementById('pokaz-nick').innerText = `👤 ${mojNick}`;
+                
+                // Pokaż czat
+                ekranLogowania.classList.add('ukryte');
+                ekranCzatu.classList.remove('ukryte');
+                
+                // Uruchom pobieranie danych
+                pobierzWiadomosci();
+                pollingInterval = setInterval(pobierzWiadomosci, 3000);
+            } else {
+                // Pokaż logowanie
+                ekranLogowania.classList.remove('ukryte');
+                ekranCzatu.classList.add('ukryte');
+                clearInterval(pollingInterval);
+            }
+        }
+
+        document.getElementById('btn-zaloguj').addEventListener('click', () => {
+            const wpisanyNick = inputNick.value.trim();
+            if (wpisanyNick !== '') {
+                localStorage.setItem('shoutboxNick', wpisanyNick);
+                // Ciche odtworzenie dźwięku odblokowuje przeglądarkę na przyszłe powiadomienia!
+                dzwiekPowiadomienia.play().catch(e => console.log("Oczekuję na interakcję audio"));
+                sprawdzSesje();
+            }
+        });
+
+        document.getElementById('btn-wyloguj').addEventListener('click', () => {
+            localStorage.removeItem('shoutboxNick');
+            poprzedniaIloscWiadomosci = 0; // Resetujemy pamięć o ilości wiadomości
+            sprawdzSesje();
+        });
+
+        // Pozwala zalogować się klawiszem Enter
+        function handleEnter(e) {
+            if (e.key === 'Enter') document.getElementById('btn-zaloguj').click();
+        }
+
+        // 3. POBIERANIE DANYCH (GET) ORAZ RYSOWANIE
+        async function pobierzWiadomosci() {
+            try {
+                const odpowiedz = await fetch(API_URL);
+                const dane = await odpowiedz.json();
+
+                // Logika dźwięku
+                if (dane.length > poprzedniaIloscWiadomosci && poprzedniaIloscWiadomosci !== 0) {
+                    dzwiekPowiadomienia.currentTime = 0;
+                    dzwiekPowiadomienia.play().catch(e => console.log(e));
+                }
+                poprzedniaIloscWiadomosci = dane.length;
+
+                rysujNaEkranie(dane);
+
+            } catch (error) {
+                console.error("Błąd połączenia z serwerem:", error);
+            }
+        }
+
+        function zamienLinkiNaKlickalne(tekst) {
+            // Proste wyrażenie regularne zamieniające url na tag <a>
+            const regex = /(https?:\/\/[^\s]+)/g;
+            return tekst.replace(regex, '<a href="$1" target="_blank" title="Otwórz link">$1</a>');
+        }
+
+        function rysujNaEkranie(wiadomosci) {
+            // Wyszukiwarka (Filter)
+            const szukanaFraza = inputSzukaj.value.toLowerCase();
+            const przefiltrowane = wiadomosci.filter(msg => 
+                msg.text.toLowerCase().includes(szukanaFraza) || 
+                msg.author.toLowerCase().includes(szukanaFraza)
+            );
+
+            // Zabezpieczenie przed skakaniem ekranu, jeśli ktoś scrolluje do góry
+            const czyJestNaDole = oknoWiadomosci.scrollHeight - oknoWiadomosci.scrollTop <= oknoWiadomosci.clientHeight + 50;
+
+            oknoWiadomosci.innerHTML = ''; // Czyszczenie okna
+
+            przefiltrowane.forEach(msg => {
+                // Generowanie awatara
+                const awatarUrl = `https://api.dicebear.com/9.x/bottts/svg?seed=${msg.author}`;
+                
+                // Formatowanie czasu
+                const czas = new Date(msg.timestamp).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+                
+                // Bezpieczny tekst z klikalnymi linkami
+                // W prawdziwej aplikacji użylibyśmy textContent żeby zapobiec XSS, 
+                // ale dla edukacyjnego przykładu stosujemy szybki zamiennik linków.
+                const bezpiecznyTekst = msg.text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const gotowyTekst = zamienLinkiNaKlickalne(bezpiecznyTekst);
+
+                // Sprawdzanie czy ja to polajkowałem (wymaga backendu wspierającego tablicę likedBy)
+                const czyPolubilem = msg.likedBy && msg.likedBy.includes(mojNick);
+                const klasaLajka = czyPolubilem ? 'liked' : '';
+                
+                // Przycisk usuwania (tylko dla moich wiadomości)
+                let przyciskUsun = '';
+                if (msg.author === mojNick) {
+                    przyciskUsun = `<button class="btn-akcja btn-delete" onclick="usunWiadomosc(${msg.id})">🗑️ Usuń</button>`;
+                }
+
+                // Budowa HTML dla pojedynczej wiadomości
+                const div = document.createElement('div');
+                div.className = 'msg-box';
+                div.innerHTML = `
+                    <div class="msg-avatar">
+                        <img src="${awatarUrl}" alt="Avatar">
+                    </div>
+                    <div class="msg-content">
+                        <div class="msg-header">
+                            <span class="msg-author">${msg.author}</span>
+                            <span class="msg-time">${czas}</span>
+                        </div>
+                        <div class="msg-text">${gotowyTekst}</div>
+                        <div class="msg-actions">
+                            <button class="btn-akcja btn-like ${klasaLajka}" onclick="dajLajka(${msg.id})">
+                                ❤️ ${msg.likes || 0}
+                            </button>
+                            ${przyciskUsun}
+                        </div>
+                    </div>
+                `;
+                oknoWiadomosci.appendChild(div);
+            });
+
+            // Auto-scroll w dół
+            if (czyJestNaDole) {
+                oknoWiadomosci.scrollTop = oknoWiadomosci.scrollHeight;
+            }
+        }
+
+        // Live search (szukanie w trakcie pisania)
+        inputSzukaj.addEventListener('input', pobierzWiadomosci);
+
+        // 4. WYSYŁANIE WIADOMOŚCI (POST)
+        document.getElementById('formularz-wiadomosci').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Blokujemy przeładowanie strony
+            
+            const inputField = document.getElementById('input-wiadomosc');
+            const wpisanyTekst = inputField.value.trim();
+            if(!wpisanyTekst) return;
+
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ author: mojNick, text: wpisanyTekst })
+                });
+                
+                inputField.value = ''; // Czyszczenie po wysłaniu
+                pobierzWiadomosci(); // Natychmiastowe odświeżenie
+
+            } catch (error) {
+                console.error("Błąd wysyłania:", error);
+                alert("Nie udało się wysłać wiadomości.");
+            }
+        });
+
+        // 5. LAJKOWANIE (PATCH)
+        async function dajLajka(id) {
+            try {
+                await fetch(`${API_URL}/${id}/like`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ author: mojNick })
+                });
+                pobierzWiadomosci();
+            } catch (error) {
+                console.error("Błąd lajkowania:", error);
+            }
+        }
+
+        // 6. USUWANIE (DELETE)
+        async function usunWiadomosc(id) {
+            if(confirm("Czy na pewno chcesz usunąć tę wiadomość?")) {
+                try {
+                    await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                    pobierzWiadomosci();
+                } catch (error) {
+                    console.error("Błąd usuwania:", error);
+                }
+            }
+        }
+
+        // START APLIKACJI
+        sprawdzSesje();
+
+    </script>
+    <!-- Podpięcie Twojej logiki -->
+<script src="app.js"></script>
+
+<!-- Rejestracja pracownika w tle (Service Workera) -->
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('✅ Service Worker działa!'))
+                .catch(err => console.log('❌ Błąd Service Workera:', err));
+        });
+    }
+</script>
+</body>
+</html>
