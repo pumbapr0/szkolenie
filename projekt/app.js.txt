@@ -1,0 +1,144 @@
+// ==========================================
+// 1. ZMIENNE GLOBALNE I USTAWIENIA
+// ==========================================
+const API_URL = 'https://apichat.m89.pl/api/messages';
+const dzwiekPowiadomienia = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
+// Zmienna do Zadania 6 (Dźwięk powiadomienia)
+let poprzedniaIlosc = 0;
+let interwalPolling; // Zmienna na nasz "timer", by móc go zatrzymać przy wylogowaniu
+
+// Łapanie elementów DOM
+const ekranLogowania = document.getElementById('ekran-logowania');
+const ekranCzatu = document.getElementById('ekran-czatu');
+const inputNick = document.getElementById('input-nick');
+const oknoWiadomosci = document.getElementById('okno-wiadomosci');
+const inputSzukaj = document.getElementById('input-szukaj');
+
+// ==========================================
+// 2. LOGIKA LOGOWANIA (Zadanie 1)
+// ==========================================
+function sprawdzLogowanie() {
+    const zapisanyNick = localStorage.getItem('shoutboxNick');
+    
+    if (zapisanyNick) {
+        ekranLogowania.classList.add('ukryte');
+        ekranCzatu.classList.remove('ukryte');
+        document.getElementById('wybrany-nick').innerText = zapisanyNick;
+        
+        // Skoro jesteśmy zalogowani, uruchamiamy pobieranie danych co 3 sekundy (Zadanie 3)
+        pobierzWiadomosci();
+        interwalPolling = setInterval(pobierzWiadomosci, 3000);
+    } else {
+        ekranLogowania.classList.remove('ukryte');
+        ekranCzatu.classList.add('ukryte');
+        clearInterval(interwalPolling); // Zatrzymujemy odpytywanie API
+    }
+}
+
+document.getElementById('btn-zaloguj').addEventListener('click', () => {
+    if (inputNick.value.trim() !== '') {
+        localStorage.setItem('shoutboxNick', inputNick.value);
+        sprawdzLogowanie();
+    }
+});
+
+document.getElementById('btn-wyloguj').addEventListener('click', () => {
+    localStorage.removeItem('shoutboxNick');
+    sprawdzLogowanie();
+});
+
+// ==========================================
+// 3. POBIERANIE DANYCH (Zadania 2, 5, 6, 7)
+// ==========================================
+async function pobierzWiadomosci() {
+    try {
+        const response = await fetch(API_URL);
+        const wiadomosci = await response.json();
+
+        // Zadanie 6: Dźwięk powiadomienia (tylko jeśli jest ich więcej)
+        if (wiadomosci.length > poprzedniaIlosc && poprzedniaIlosc !== 0) {
+            dzwiekPowiadomienia.play().catch(e => console.log("Przeglądarka zablokowała dźwięk"));
+        }
+        poprzedniaIlosc = wiadomosci.length;
+
+        // Przekazujemy wiadomości do osobnej funkcji rysującej
+        rysujCzat(wiadomosci);
+
+    } catch (error) {
+        console.error('Błąd podczas pobierania:', error);
+    }
+}
+
+// Funkcja odpowiedzialna WYŁĄCZNIE za odświeżanie HTML
+function rysujCzat(daneZSerwera) {
+    // Zadanie 7: Wyszukiwarka (Filtrowanie)
+    const filtr = inputSzukaj.value.toLowerCase();
+    
+    const przefiltrowane = daneZSerwera.filter(msg => {
+        return msg.text.toLowerCase().includes(filtr);
+    });
+
+    // Czyścimy okno przed narysowaniem nowych
+    oknoWiadomosci.innerHTML = '';
+
+    przefiltrowane.forEach(msg => {
+        // Zadanie 5: Formatowanie daty
+        const data = new Date(msg.timestamp);
+        const ladnyCzas = data.toLocaleTimeString('pl-PL');
+
+        // Tworzymy element HTML dla pojedynczej wiadomości
+        const div = document.createElement('div');
+        div.className = 'msg';
+        div.innerHTML = `
+            <span class="msg-time">[${ladnyCzas}]</span> 
+            <span class="msg-author">${msg.author}:</span> 
+            ${msg.text}
+        `;
+        oknoWiadomosci.appendChild(div);
+    });
+
+    // Automatyczne scrollowanie na sam dół czatu
+    oknoWiadomosci.scrollTop = oknoWiadomosci.scrollHeight;
+}
+
+// ==========================================
+// 4. WYSYŁANIE DANYCH POST (Zadanie 4)
+// ==========================================
+document.getElementById('formularz-wiadomosci').addEventListener('submit', async (event) => {
+    // Blokujemy odświeżenie strony
+    event.preventDefault();
+    
+    const wejscieWiadomosci = document.getElementById('input-wiadomosc');
+    const wpisanyTekst = wejscieWiadomosci.value;
+
+    const paczkaDanych = {
+        author: localStorage.getItem('shoutboxNick'),
+        text: wpisanyTekst
+    };
+
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(paczkaDanych)
+        });
+
+        // Sukces! Czyścimy inputa po wysłaniu
+        wejscieWiadomosci.value = '';
+        
+        // Od razu wymuszamy pobranie nowych danych, żeby uczeń nie musiał czekać 3 sekund z setIntervala
+        pobierzWiadomosci();
+
+    } catch (error) {
+        console.error('Nie udało się wysłać:', error);
+    }
+});
+
+// Odpalamy interaktywne wyszukiwanie "na żywo" (Zadanie 7)
+inputSzukaj.addEventListener('input', pobierzWiadomosci);
+
+// ==========================================
+// INICJALIZACJA APLIKACJI (Odpala się raz na start)
+// ==========================================
+sprawdzLogowanie();
