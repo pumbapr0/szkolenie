@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temat 2.2: JSON i wysyłanie danych</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; line-height: 1.6; color: #333; }
+        h1 { color: #0056b3; }
+        h2 { color: #d9534f; border-bottom: 2px solid #d9534f; padding-bottom: 5px; margin-top: 40px;}
+        .info { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 5px solid #0056b3;}
+        .code-block { background-color: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 1.1em; margin-bottom: 20px; white-space: pre-wrap; word-wrap: break-word; overflow-x: auto; }
+        .diagram-container { text-align: center; margin: 20px 0; padding: 10px; border: 1px dashed #aaa; background-color: #fff; }
+        .form-container { background-color: #f8f9fa; padding: 20px; border: 1px solid #ddd; border-radius: 5px; max-width: 400px; margin-bottom: 20px;}
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold;}
+        .form-group input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;}
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
+        button:hover { background-color: #0056b3; }
+        .output { margin-top: 15px; padding: 10px; background-color: #e8f5e9; border: 1px dashed #4caf50; font-family: monospace; }
+        .keyword { color: #ff79c6; }
+        .string { color: #f1fa8c; }
+        .comment { color: #6272a4; }
+    </style>
+</head>
+<body>
+
+    <h1>Moduł 2, Temat 2: JSON i formularze</h1>
+    
+    <div class="info">
+        <p><strong>Czym jest JSON?</strong> Internet nie rozumie skomplikowanych obiektów JavaScriptu z ich funkcjami i metodami. Rozumie za to czysty tekst. JSON (JavaScript Object Notation) to sposób na zamianę naszego obiektu w zwykły ciąg znaków (tekst), tak by móc go przesłać kablem do serwera.</p>
+    </div>
+
+    <div class="diagram-container">
+        <p><em>Schemat: Zamiana (Serializacja) obiektu JavaScript na tekstowy format JSON i odwrotnie.</em></p>
+        
+    </div>
+
+    <h2>1. Magia JSON.stringify() i JSON.parse()</h2>
+    <p>Aby przetłumaczyć dane w obie strony, JS posiada wbudowany obiekt <code>JSON</code> z dwiema najważniejszymi metodami:</p>
+
+    <div class="code-block"><span class="keyword">const</span> uzytkownik = { imie: <span class="string">"Anna"</span>, wiek: 25 };
+
+<span class="comment">// 1. Zmieniamy obiekt JS w tekst JSON (aby wysłać do serwera):</span>
+<span class="keyword">const</span> jsonTekst = JSON.stringify(uzytkownik); 
+<span class="comment">// Wynik: '{"imie":"Anna","wiek":25}' (Zwróć uwagę na cudzysłowy przy kluczach!)</span>
+
+<span class="comment">// 2. Odbieramy tekst z serwera i zamieniamy go z powrotem w obiekt JS:</span>
+<span class="keyword">const</span> odebranyObiekt = JSON.parse(jsonTekst);
+<span class="comment">// Teraz znowu możemy używać: odebranyObiekt.imie</span></div>
+
+    <h2>2. Pobieranie danych z formularza i metoda POST</h2>
+    <p>Kiedy wysyłamy dane na serwer, nasza funkcja <code>fetch()</code> musi zostać odpowiednio skonfigurowana. Domyślnie robi ona "GET" (pobieranie). My musimy jej powiedzieć: <em>"Zrób POST (wysyłanie), tutaj masz moje dane w formacie JSON, i wiedz, że to jest JSON"</em>.</p>
+
+    <div class="form-container">
+        <h3>Rejestracja Użytkownika</h3>
+        <form id="formularz-rejestracji">
+            <div class="form-group">
+                <label for="imie-input">Imię:</label>
+                <input type="text" id="imie-input" required>
+            </div>
+            <div class="form-group">
+                <label for="email-input">Adres E-mail:</label>
+                <input type="email" id="email-input" required>
+            </div>
+            <button type="submit">Zarejestruj (Wyślij do API)</button>
+        </form>
+    </div>
+
+    <div class="output" id="wynik-serwera">Czekam na wysłanie formularza...</div>
+
+    <script>
+        const formularz = document.getElementById('formularz-rejestracji');
+        const ekranWyniku = document.getElementById('wynik-serwera');
+
+        // Nasłuchujemy zdarzenia 'submit' (wysłanie formularza)
+        formularz.addEventListener('submit', async (zdarzenie) => {
+            // BARDZO WAŻNE: Zapobiegamy domyślnemu odświeżeniu strony przez przeglądarkę!
+            zdarzenie.preventDefault();
+
+            // 1. Zbieramy dane z inputów
+            const wpisaneImie = document.getElementById('imie-input').value;
+            const wpisanyEmail = document.getElementById('email-input').value;
+
+            // 2. Budujemy obiekt
+            const noweDane = {
+                name: wpisaneImie,
+                email: wpisanyEmail
+            };
+
+            ekranWyniku.innerHTML = "<em>Wysyłanie danych (POST)...</em>";
+
+            try {
+                // 3. Wysyłamy dane za pomocą fetch() i metody POST
+                // Używamy testowego API (JSONPlaceholder), które udaje, że przyjmuje i zapisuje nasze dane
+                const odpowiedz = await fetch('https://jsonplaceholder.typicode.com/users', {
+                    method: 'POST', // Metoda wysyłania
+                    headers: {
+                        'Content-Type': 'application/json' // Mówimy kelnerowi: "To jest w formacie JSON!"
+                    },
+                    body: JSON.stringify(noweDane) // Zamieniamy nasz obiekt na tekstowy JSON
+                });
+
+                if (!odpowiedz.ok) throw new Error("Błąd podczas wysyłania!");
+
+                const odpowiedzSerwera = await odpowiedz.json();
+
+                // Wyświetlamy sukces
+                ekranWyniku.innerHTML = `
+                    <span style="color: green;"><strong>Sukces! Serwer zapisał dane i odesłał odpowiedź:</strong></span><br>
+                    ID dodanego użytkownika: ${odpowiedzSerwera.id} <br>
+                    Imię: ${odpowiedzSerwera.name} <br>
+                    Email: ${odpowiedzSerwera.email}
+                `;
+
+                // Czyścimy formularz po sukcesie
+                formularz.reset();
+
+            } catch (blad) {
+                ekranWyniku.innerHTML = `<span style="color: red;"><strong>Błąd:</strong> ${blad.message}</span>`;
+            }
+        });
+    </script>
+</body>
+</html>

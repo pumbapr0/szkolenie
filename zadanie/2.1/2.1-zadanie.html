@@ -51,9 +51,7 @@
         
         /* --- TWÓJ KOD TUTAJ --- */
         async function pobierzZart() {
-            // Zmieniamy tekst podczas ładowania
-            miejsceNaZart.innerHTML = "<em>Łączenie z serwerem...</em>";
-
+             miejsceNaZart.innerHTML = "<em>Łączenie z serwerem...</em>";
             try {
                 // 2. Użyj 'await fetch(adres_url)' aby pobrać dane z podanego wyżej adresu.
                 // Wynik zapisz do zmiennej np. 'odpowiedz'.
@@ -72,7 +70,7 @@
                 // Np.: `<p>${zartDane.setup}</p><strong>${zartDane.punchline}</strong>`
                 
                 /* --- TWÓJ KOD TUTAJ --- */
-                miejsceNaZart.innerHTML = `<p>${zartDane.setup}</p><strong>${zartDane.punchline}</strong>`
+                miejsceNaZart.innerHTML = `<p>${zartDane.setup}</p><strong>${zartDane.punchline}</strong>
 
             } catch (blad) {
                 // Jeśli coś pójdzie nie tak (np. brak internetu)
